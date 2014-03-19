@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html class='no-js'>
+    <head>
+        <meta charset='utf-8'>
+        <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+        <title>Shader Experiment</title>
+        <meta name='description' content=''>
+        <meta name='viewport' content='width=device-width'>
+
+        <link rel='stylesheet' href='css/normalize.min.css'>
+        <link rel='stylesheet' href='css/main.css'>
+
+        <script src='js/vendor/jquery-2.1.0.min.js'></script>
+<!--    <script src='js/vendor/jquery.mousewheel.js'></script>
+        <script src="js/vendor/dat.gui.min.js"></script> -->
+        <script src='js/vendor/stats.js'></script>
+
+    </head>
+    <body>
+
+        <canvas id='canvas' oncontextmenu="return false;"></canvas>
+
+        <script id='vertex-shader' type='x-shader/x-vertex'>
+            attribute vec2 a_position;
+
+            varying vec2 v_texCoord;
+
+
+            void main() {
+                vec2 clipSpace = a_position * 2.0 - 1.0;
+               
+                gl_Position = vec4(clipSpace, 0, 1);
+
+                v_texCoord = a_position;
+            }
+        </script>
+        
+        <script id='fragment-shader' type='x-shader/x-fragment'>
+            precision highp float;
+
+            uniform vec2 u_resolution;
+            uniform vec2 u_mouse;
+            uniform float u_time;
+
+            #define ITER 180
+            #define DELTA 0.001
+            #define MAX_DISTANCE 50.0
+
+            float sphere(vec3 p, float s, float c) {
+   
+                p = mod(p, c) - 0.5 * c;
+                return abs(length(p) - s);
+            }
+
+            float plane(vec3 p){
+                return abs(p.y);
+            }
+
+            void main() {
+
+                vec2 uv = gl_FragCoord.xy / u_resolution - 0.5;
+                uv.x *= u_resolution.x / u_resolution.y;
+
+                vec3 ro = vec3(0.0, 0.25 * sin(u_time) - 0.1 * u_time, u_time);
+                vec3 rd = normalize( vec3(uv, 1.0) );
+
+                vec3 color;
+
+                vec3 ray;
+                float distance = 0.0;
+
+                for(int i = 0; i < ITER; i++) {
+
+                    ray = ro + distance * rd;
+
+                    if (distance > MAX_DISTANCE) {
+                        break;
+                    }
+
+                    // float p = plane(ray);
+                    float s = sphere(ray, 0.18 + 0.005 * sin(u_time * 5.0), 1.0);
+
+                    if (s <= DELTA) {
+                        color = vec3(0, 0.5 - float(i) / float(ITER) * 0.5, 1.0 - float(i) / float(ITER));
+                        break;
+                    }
+
+                    // else if (p <= DELTA ) {
+                    //     color = vec3(1.0 - float(i) / float(ITER), 0.65 - float(i) / float(ITER) * 0.65, 0.0);
+                    //     break;
+                    // }
+
+                    distance += s;
+
+                }
+
+                color += distance / MAX_DISTANCE;
+
+                gl_FragColor = vec4(color, 1.0);
+            }
+        </script>
+
+        <script src='js/main.js'></script>
+    </body>
+</html>
